@@ -54,21 +54,21 @@ module "security_groups" {
 
 # EC2 Instances
 
-# module "ec2_instances" {
-#   source        = "../module/ec2"
-#   for_each      = var.ec2_instances
-#   name          = each.value.name
-#   ami           = each.value.ami
-#   instance_type = each.value.instance_type
-#   subnet_id     = each.value.subnet_id
-#   key_name      = module.key_pair.key_name
-#   security_groups = [
-#     module.security_groups[each.value.security_group_key].security_group_id
-#   ]
-#   volume_size = each.value.volume_size
-#   tags        = each.value.tags
-#   kms_key_arn  = module.kms.key_arn
-# }
+module "ec2_instances" {
+  source        = "../module/ec2"
+  for_each      = var.ec2_instances
+  name          = each.value.name
+  ami           = each.value.ami
+  instance_type = each.value.instance_type
+  subnet_id     = each.value.subnet_id
+  key_name      = each.value.key_name
+  security_groups = [
+    module.security_groups[each.value.security_group_key].security_group_id
+  ]
+  volume_size = each.value.volume_size
+  tags        = each.value.tags
+  kms_key_arn  = module.kms.key_arn
+}
 
 # ECR Repositories
 
@@ -84,15 +84,15 @@ module "security_groups" {
 # }
 
 
-# module "key_pair" {
-#   source   = "../module/key_pair"
-#   key_name = var.key_name
-#   tags     = var.common_tags
-# }
-# module "kms" {
-#   source = "../module/kms"
-#   region = var.region
-#   alias_name              = var.alias_name
-#   description             = var.description
-#   deletion_window_in_days = var.deletion_window_in_days
-# }
+ module "key_pair" {
+   source   = "../module/key_pair"
+   key_name = var.key_name
+   tags     = var.common_tags
+ }
+module "kms" {
+  source = "../module/kms"
+  region = var.region
+  alias_name              = var.alias_name
+  description             = var.description
+  deletion_window_in_days = var.deletion_window_in_days
+}
