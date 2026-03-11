@@ -37,7 +37,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t $CONTAINER_NAME .
+          docker build -t $CONTAINER_NAME ./app
 
       - name: Tag Docker Image
         run: |
