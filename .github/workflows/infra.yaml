@@ -28,4 +28,4 @@ jobs:
         working-directory: ./prod
         run: |
           terraform init -upgrade
-          terraform apply -auto-approve
+          terraform destroy -auto-approve
