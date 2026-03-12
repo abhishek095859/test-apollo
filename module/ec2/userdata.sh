@@ -64,7 +64,8 @@ EOF
 
 echo "Installing CloudWatch Agent..."
 
-sudo yum install -y -q amazon-cloudwatch-agent || true
+# Install without showing curl errors
+sudo yum install -y -q amazon-cloudwatch-agent 2>/dev/null || true
 
 echo "CloudWatch package install completed"
 
