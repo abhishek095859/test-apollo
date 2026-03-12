@@ -17,6 +17,7 @@ jobs:
       IMAGE_TAG: latest
       CONTAINER_NAME: app1
       PORT: 8081
+      TARGET_INSTANCE_ID: i-0da8d45dae555df12
 
     steps:
       - name: Checkout
@@ -46,7 +47,7 @@ jobs:
         run: |
           # We use env variables directly in the command string to ensure they are expanded
           aws ssm send-command \
-            --targets "Key=tag:App,Values=nginx" \
+            --instance-ids "${{ env.TARGET_INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
             --comment "Deploying $CONTAINER_NAME to nginx tagged instances" \
             --parameters commands="[
