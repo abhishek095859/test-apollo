@@ -1,19 +1,21 @@
 region = "ap-south-1"
 
-key_name = "ATL-RnA-Athena-Ec2"
+key_name = "test-apollo"
+
+vpc_id   = "vpc-0d998ab18a806df39"
+subnet_id = "subnet-0307ac50da362607f"
 
 common_tags = {
   project     = "athena2.0"
   owner       = "shailender.gupta@apollotyres.com"
   environment = "prod"
 }
-
 security_groups = {
 
   EC2-SG = {
     name        = "ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-01-SG"
     description = "ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-01 security Group"
-    vpc_id      = "vpc-0d998ab18a806df39"
+    #vpc_id      = "vpc-0d998ab18a806df39"
 
     ingress_rules = [
       {
@@ -61,8 +63,8 @@ ec2_instances = {
     name               = "ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-01"
     ami                = "ami-0f559c3642608c138"
     instance_type      = "t2.medium"
-    subnet_id          = "subnet-0307ac50da362607f"
-    key_name           = "ATL-RnA-Athena-Ec2"
+    #subnet_id          = "subnet-078481691ca6901e4"
+    key_name           = "test-apollo"
     security_group_key = "EC2-SG"
     volume_size        = 100
 
@@ -123,4 +125,8 @@ ecr_repositories = {
 #########################
 alias_name = "athena-ebs-key"
 description = "Encryption key for EBS volumes"
-deletion_window_in_days = 7
+#deletion_window_in_days = 30
+
+# crowdstrike_installer_s3 = "s3://bucket/falcon.rpm"
+# crowdstrike_cid          = "XXXXXXXXXXXX"
+
