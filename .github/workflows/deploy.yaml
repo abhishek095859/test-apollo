@@ -52,7 +52,7 @@ jobs:
       - name: Deploy to EC2 via SSM
         run: |
           aws ssm send-command \
-          --targets "Key=tag:project ,Values=athena2.0" \
+          --targets "Key=tag:App,Values=nginx" \
           --document-name "AWS-RunShellScript" \
           --comment "Deploy application" \
           --parameters commands="[
