@@ -1,7 +1,6 @@
 variable "name" {}
 variable "ami" {}
 variable "instance_type" {}
-variable "subnet_id" {}
 variable "key_name" {}
 
 variable "security_groups" {}
@@ -18,4 +17,18 @@ variable "volume_size" {
 variable "kms_key_arn" {
   description = "The ARN of the KMS CMK to use for EBS encryption"
   type        = string
+}
+# variable "crowdstrike_installer_s3" {
+#   type = string
+# }
+ 
+# variable "crowdstrike_cid" {
+#   type = string
+# }
+variable "vpc_id" {
+  type = string
+}
+ 
+variable "subnet_id" {
+  type = string
 }
