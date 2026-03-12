@@ -1,27 +1,4 @@
-# variable "region" {}
 
-# variable "security_groups" {}
-
-# variable "ec2_instances" {
-#   type = map(object({
-#     name            = string
-#     ami             = string
-#     instance_type   = string
-#     subnet_id       = string
-#     key_name        = string
-#     security_groups = list(string)
-#     tags            = map(string)
-#   }))
-# }
-
-# variable "ecr_repositories" {
-#   # type = map(object({
-#   #   name           = string
-#   #   tag_mutability = string
-#   #   scan_on_push   = bool
-#   #   tags           = map(string)
-#   # }))
-# }
 
 variable "region" {}
 
@@ -50,7 +27,25 @@ variable "description" {
   description = "The description for the KMS key"
 }
 
-variable "deletion_window_in_days" {
-  type        = number
-  description = "Days to wait before deleting the key"
+# variable "deletion_window_in_days" {
+#   type        = number
+#   description = "Days to wait before deleting the key"
+# }
+# variable "crowdstrike_installer_s3" {
+#   type = string
+# }
+ 
+# variable "crowdstrike_cid" {
+#   type = string
+# }
+variable "vpc_id" {
+  description = "The ID of the existing VPC to import"
+  type        = string
+  #default     = "vpc-0d998ab18a806df39"
+}
+
+variable "subnet_id" {
+  description = "The ID of the existing subnet to import"
+  type        = string
+  #default     = "subnet-078481691ca6901e4"
 }
