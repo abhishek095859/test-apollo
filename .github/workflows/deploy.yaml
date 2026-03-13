@@ -57,6 +57,10 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      # 1. ADD THIS STEP - This pulls your code so the runner sees docker-compose.yml
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -65,20 +69,16 @@ jobs:
 
       - name: Deploy Stack via SSM
         run: |
-          # 1. Encode the file to Base64 so special characters/newlines don't break the command
+          # Now this command will find the file!
           COMPOSE_BASE64=$(base64 -w 0 docker-compose.yml)
 
-          # 2. Send to SSM
           aws ssm send-command \
             --targets "Key=tag:project,Values=athena2.0" \
             --document-name "AWS-RunShellScript" \
             --parameters commands=[
               "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${{ needs.build.outputs.FRONTEND_IMAGE }}",
               "mkdir -p ~/athena-app",
-              
-              # 3. Decode it back into a file on the EC2
               "echo '$COMPOSE_BASE64' | base64 -d > ~/athena-app/docker-compose.yml",
-              
               "echo 'FRONTEND_IMAGE=${{ needs.build.outputs.FRONTEND_IMAGE }}' > ~/athena-app/.env",
               "echo 'BACKEND_IMAGE=${{ needs.build.outputs.BACKEND_IMAGE }}' >> ~/athena-app/.env",
               "echo 'WORKER_IMAGE=${{ needs.build.outputs.WORKER_IMAGE }}' >> ~/athena-app/.env",
