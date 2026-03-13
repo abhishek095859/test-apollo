@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - folder: "app1-folder" # Folder name in the app repo
+          - folder: "app" # Folder name in the app repo
             ecr: "atl_apac_mum_dtlk_prod_athena2.0_ecr_01"
             container: "app1"
             port: 8081
@@ -34,7 +34,7 @@ jobs:
       - name: Checkout Application Repo
         uses: actions/checkout@v4
         with:
-          repository: your-org-name/your-application-repo-name
+          repository: abhishek095859/test-cross
           token: ${{ secrets.APP_REPO_TOKEN }}
           path: my-apps # This pulls the whole repo into a folder called 'my-apps'
 
@@ -49,14 +49,16 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and Push
+        id: build-step # Added an ID here
         run: |
           REGISTRY=${{ steps.login-ecr.outputs.registry }}
           FULL_IMAGE=$REGISTRY/${{ matrix.ecr }}:latest
           
-          # We point to 'my-apps/' + the specific folder from the matrix
           docker build -t $FULL_IMAGE ./my-apps/${{ matrix.folder }}
           docker push $FULL_IMAGE
-          echo "IMAGE_URI=$FULL_IMAGE" >> $GITHUB_ENV
+          
+          # This creates an output that the next step can definitely read
+          echo "image_uri=$FULL_IMAGE" >> $GITHUB_OUTPUT
 
       - name: Deploy to EC2 Cluster (Both Instances)
         run: |
@@ -67,7 +69,7 @@ jobs:
               \"aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}\",
               \"docker stop ${{ matrix.container }} || true\",
               \"docker rm ${{ matrix.container }} || true\",
-              \"docker pull ${{ env.IMAGE_URI }}\",
-              \"docker run -d -p ${{ matrix.port }}:80 --name ${{ matrix.container }} ${{ env.IMAGE_URI }}\",
+              \"docker pull ${{ steps.build-step.outputs.image_uri }}\",
+              \"docker run -d -p ${{ matrix.port }}:80 --name ${{ matrix.container }} ${{ steps.build-step.outputs.image_uri }}\",
               \"docker ps\"
             ]"
