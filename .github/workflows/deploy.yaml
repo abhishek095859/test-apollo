@@ -69,20 +69,21 @@ jobs:
 
       - name: Deploy Stack via SSM
         run: |
-          # Now this command will find the file!
+          # 1. Encode the file
           COMPOSE_BASE64=$(base64 -w 0 docker-compose.yml)
 
+          # 2. Send the command with proper quoting
           aws ssm send-command \
             --targets "Key=tag:project,Values=athena2.0" \
             --document-name "AWS-RunShellScript" \
-            --parameters commands=[
-              "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${{ needs.build.outputs.FRONTEND_IMAGE }}",
+            --parameters 'commands=[
+              "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 185863138492.dkr.ecr.ap-south-1.amazonaws.com/atl_apac_mum_dtlk_prod_athena2.0_ecr_01:web-latest",
               "mkdir -p ~/athena-app",
               "echo '$COMPOSE_BASE64' | base64 -d > ~/athena-app/docker-compose.yml",
-              "echo 'FRONTEND_IMAGE=${{ needs.build.outputs.FRONTEND_IMAGE }}' > ~/athena-app/.env",
-              "echo 'BACKEND_IMAGE=${{ needs.build.outputs.BACKEND_IMAGE }}' >> ~/athena-app/.env",
-              "echo 'WORKER_IMAGE=${{ needs.build.outputs.WORKER_IMAGE }}' >> ~/athena-app/.env",
+              "echo \"FRONTEND_IMAGE=185863138492.dkr.ecr.ap-south-1.amazonaws.com/atl_apac_mum_dtlk_prod_athena2.0_ecr_01:web-latest\" > ~/athena-app/.env",
+              "echo \"BACKEND_IMAGE=185863138492.dkr.ecr.ap-south-1.amazonaws.com/atl_apac_mum_dtlk_prod_athena2.0_ecr_01:api-latest\" >> ~/athena-app/.env",
+              "echo \"WORKER_IMAGE=185863138492.dkr.ecr.ap-south-1.amazonaws.com/atl_apac_mum_dtlk_prod_athena2.0_ecr_01:worker-latest\" >> ~/athena-app/.env",
               "cd ~/athena-app && docker compose pull",
               "cd ~/athena-app && docker compose up -d",
               "docker ps"
-            ]
+            ]'
