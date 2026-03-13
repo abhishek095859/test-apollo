@@ -1,4 +1,4 @@
-name: "Application Deployment"
+name: "Cross-Repo Multi-App Deployment"
 
 on:
   workflow_dispatch:
@@ -10,18 +10,33 @@ permissions:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
-    env:
-      AWS_REGION: ap-south-1
-      ECR_REPO: atl_apac_mum_dtlk_prod_athena2.0_ecr_01
-      IMAGE_TAG: latest
-      CONTAINER_NAME: app1
-      PORT: 8081
-      #TARGET_INSTANCE_ID: i-0da8d45dae555df12
+    strategy:
+      matrix:
+        include:
+          - folder: "app1-folder" # Folder name in the app repo
+            ecr: "atl_apac_mum_dtlk_prod_athena2.0_ecr_01"
+            container: "app1"
+            port: 8081
+          #- folder: "app2-folder"
+            #ecr: "atl_apac_mum_dtlk_prod_athena2.0_ecr_02"
+            #container: "app2"
+            #port: 8082
+          #- folder: "app3-folder"
+            #ecr: "atl_apac_mum_dtlk_prod_athena2.0_ecr_03"
+            #container: "app3"
+            #port: 8083
 
     steps:
-      - name: Checkout
+      - name: Checkout CI/CD Repo
         uses: actions/checkout@v4
+
+      # 1. Pull the application code from the OTHER repo
+      - name: Checkout Application Repo
+        uses: actions/checkout@v4
+        with:
+          repository: your-org-name/your-application-repo-name
+          token: ${{ secrets.APP_REPO_TOKEN }}
+          path: my-apps # This pulls the whole repo into a folder called 'my-apps'
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -33,28 +48,26 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, Tag, and Push
+      - name: Build and Push
         run: |
-          # Combining these steps is cleaner and faster
           REGISTRY=${{ steps.login-ecr.outputs.registry }}
-          FULL_IMAGE=$REGISTRY/$ECR_REPO:$IMAGE_TAG
+          FULL_IMAGE=$REGISTRY/${{ matrix.ecr }}:latest
           
-          docker build -t $FULL_IMAGE ./app
+          # We point to 'my-apps/' + the specific folder from the matrix
+          docker build -t $FULL_IMAGE ./my-apps/${{ matrix.folder }}
           docker push $FULL_IMAGE
           echo "IMAGE_URI=$FULL_IMAGE" >> $GITHUB_ENV
 
-      - name: Deploy to EC2 via SSM
+      - name: Deploy to EC2 Cluster (Both Instances)
         run: |
-          # We use env variables directly in the command string to ensure they are expanded
           aws ssm send-command \
             --targets "Key=tag:project,Values=athena2.0" \
             --document-name "AWS-RunShellScript" \
-            --comment "Deploying $CONTAINER_NAME to nginx tagged instances" \
             --parameters commands="[
-              \"aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}\",
-              \"docker stop ${{ env.CONTAINER_NAME }} || true\",
-              \"docker rm ${{ env.CONTAINER_NAME }} || true\",
+              \"aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}\",
+              \"docker stop ${{ matrix.container }} || true\",
+              \"docker rm ${{ matrix.container }} || true\",
               \"docker pull ${{ env.IMAGE_URI }}\",
-              \"docker run -d -p ${{ env.PORT }}:80 --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE_URI }}\",
+              \"docker run -d -p ${{ matrix.port }}:80 --name ${{ matrix.container }} ${{ env.IMAGE_URI }}\",
               \"docker ps\"
             ]"
