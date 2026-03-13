@@ -1,4 +1,4 @@
-name: "Cross-Repo Multi-App Deployment"
+name: "3-Tier Deployment with Docker Compose"
 
 on:
   workflow_dispatch:
@@ -8,69 +8,79 @@ permissions:
   contents: read
 
 jobs:
-  build-and-deploy:
-    name: "deploy"
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
-          - folder: "app" # Folder name in the app repo
-            ecr: "atl_apac_mum_dtlk_prod_athena2.0_ecr_01"
-            container: "app1"
-            port: 8081
-          #- folder: "app2-folder"
-            #ecr: "atl_apac_mum_dtlk_prod_athena2.0_ecr_02"
-            #container: "app2"
-            #port: 8082
-          #- folder: "app3-folder"
-            #ecr: "atl_apac_mum_dtlk_prod_athena2.0_ecr_03"
-            #container: "app3"
-            #port: 8083
-
+          - folder: "./frontend"
+            tag: "web-latest"
+            key: "FRONTEND_IMAGE"
+          - folder: "./backend"
+            tag: "api-latest"
+            key: "BACKEND_IMAGE"
+          - folder: "./worker"
+            tag: "worker-latest"
+            key: "WORKER_IMAGE"
+    outputs:
+      # These collect the URIs from the matrix to pass to the deploy job
+      FRONTEND_IMAGE: ${{ steps.save.outputs.FRONTEND_IMAGE }}
+      BACKEND_IMAGE: ${{ steps.save.outputs.BACKEND_IMAGE }}
+      WORKER_IMAGE: ${{ steps.save.outputs.WORKER_IMAGE }}
+    
     steps:
-      - name: Checkout CI/CD Repo
-        uses: actions/checkout@v4
-
-      # 1. Pull the application code from the OTHER repo
-      - name: Checkout Application Repo
-        uses: actions/checkout@v4
-        with:
-          repository: abhishek095859/test-cross
-          token: ${{ secrets.APP_REPO_TOKEN }}
-          path: my-apps # This pulls the whole repo into a folder called 'my-apps'
-
+      - uses: actions/checkout@v4
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::185863138492:role/crossaccountb
           aws-region: ap-south-1
 
-      - name: Login to Amazon ECR
+      - name: Login to ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and Push
-        id: build-step # Added an ID here
         run: |
-          REGISTRY=${{ steps.login-ecr.outputs.registry }}
-          FULL_IMAGE=$REGISTRY/${{ matrix.ecr }}:latest
+          # UPDATED: Using your specific ECR repo name
+          REPO_NAME="atl_apac_mum_dtlk_prod_athena2.0_ecr_01"
+          FULL_IMAGE=${{ steps.login-ecr.outputs.registry }}/$REPO_NAME:${{ matrix.tag }}
           
-          docker build -t $FULL_IMAGE ./my-apps/${{ matrix.folder }}
+          docker build -t $FULL_IMAGE ${{ matrix.folder }}
           docker push $FULL_IMAGE
           
-          # This creates an output that the next step can definitely read
-          echo "image_uri=$FULL_IMAGE" >> $GITHUB_OUTPUT
+          # This sets the specific key (e.g. FRONTEND_IMAGE) for this matrix run
+          echo "${{ matrix.key }}=$FULL_IMAGE" >> $GITHUB_OUTPUT
+        id: save
 
-      - name: Deploy to EC2 Cluster (Both Instances)
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::185863138492:role/crossaccountb
+          aws-region: ap-south-1
+
+      - name: Deploy Stack via SSM
         run: |
           aws ssm send-command \
             --targets "Key=tag:project,Values=athena2.0" \
             --document-name "AWS-RunShellScript" \
-            --parameters commands="[
-              \"aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}\",
-              \"docker stop ${{ matrix.container }} || true\",
-              \"docker rm ${{ matrix.container }} || true\",
-              \"docker pull ${{ steps.build-step.outputs.image_uri }}\",
-              \"docker run -d -p ${{ matrix.port }}:80 --name ${{ matrix.container }} ${{ steps.build-step.outputs.image_uri }}\",
-              \"docker ps\"
-            ]"
+            --parameters '{"commands":[
+              "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${{ needs.build.outputs.FRONTEND_IMAGE }}",
+              "mkdir -p ~/athena-app",
+              "echo \"version: ''3.8''\" > ~/athena-app/docker-compose.yml",
+              "echo \"services:\" >> ~/athena-app/docker-compose.yml",
+              "echo \"  frontend: { image: ''${FRONTEND_IMAGE}'', ports: [''80:80''], restart: always }\" >> ~/athena-app/docker-compose.yml",
+              "echo \"  backend: { image: ''${BACKEND_IMAGE}'', ports: [''8080:80''], restart: always }\" >> ~/athena-app/docker-compose.yml",
+              "echo \"  worker: { image: ''${WORKER_IMAGE}'', ports: [''8081:80''], restart: always }\" >> ~/athena-app/docker-compose.yml",
+              "echo \"FRONTEND_IMAGE=${{ needs.build.outputs.FRONTEND_IMAGE }}\" > ~/athena-app/.env",
+              "echo \"BACKEND_IMAGE=${{ needs.build.outputs.BACKEND_IMAGE }}\" >> ~/athena-app/.env",
+              "echo \"WORKER_IMAGE=${{ needs.build.outputs.WORKER_IMAGE }}\" >> ~/athena-app/.env",
+              "cd ~/athena-app && docker compose pull",
+              "cd ~/athena-app && docker compose up -d",
+              "docker image prune -f",
+              "docker ps"
+            ]}'
