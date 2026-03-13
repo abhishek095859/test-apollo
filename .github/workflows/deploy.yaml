@@ -65,22 +65,24 @@ jobs:
 
       - name: Deploy Stack via SSM
         run: |
+          # 1. Encode the file to Base64 so special characters/newlines don't break the command
+          COMPOSE_BASE64=$(base64 -w 0 docker-compose.yml)
+
+          # 2. Send to SSM
           aws ssm send-command \
             --targets "Key=tag:project,Values=athena2.0" \
             --document-name "AWS-RunShellScript" \
-            --parameters '{"commands":[
+            --parameters commands=[
               "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${{ needs.build.outputs.FRONTEND_IMAGE }}",
               "mkdir -p ~/athena-app",
-              "echo \"version: ''3.8''\" > ~/athena-app/docker-compose.yml",
-              "echo \"services:\" >> ~/athena-app/docker-compose.yml",
-              "echo \"  frontend: { image: ''${FRONTEND_IMAGE}'', ports: [''80:80''], restart: always }\" >> ~/athena-app/docker-compose.yml",
-              "echo \"  backend: { image: ''${BACKEND_IMAGE}'', ports: [''8080:80''], restart: always }\" >> ~/athena-app/docker-compose.yml",
-              "echo \"  worker: { image: ''${WORKER_IMAGE}'', ports: [''8081:80''], restart: always }\" >> ~/athena-app/docker-compose.yml",
-              "echo \"FRONTEND_IMAGE=${{ needs.build.outputs.FRONTEND_IMAGE }}\" > ~/athena-app/.env",
-              "echo \"BACKEND_IMAGE=${{ needs.build.outputs.BACKEND_IMAGE }}\" >> ~/athena-app/.env",
-              "echo \"WORKER_IMAGE=${{ needs.build.outputs.WORKER_IMAGE }}\" >> ~/athena-app/.env",
+              
+              # 3. Decode it back into a file on the EC2
+              "echo '$COMPOSE_BASE64' | base64 -d > ~/athena-app/docker-compose.yml",
+              
+              "echo 'FRONTEND_IMAGE=${{ needs.build.outputs.FRONTEND_IMAGE }}' > ~/athena-app/.env",
+              "echo 'BACKEND_IMAGE=${{ needs.build.outputs.BACKEND_IMAGE }}' >> ~/athena-app/.env",
+              "echo 'WORKER_IMAGE=${{ needs.build.outputs.WORKER_IMAGE }}' >> ~/athena-app/.env",
               "cd ~/athena-app && docker compose pull",
               "cd ~/athena-app && docker compose up -d",
-              "docker image prune -f",
               "docker ps"
-            ]}'
+            ]
