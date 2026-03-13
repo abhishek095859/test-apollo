@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  athena-frontend:
+    image: ${FRONTEND_IMAGE}
+    ports:
+      - "80:80"
+    restart: always
+
+  athena-backend:
+    image: ${BACKEND_IMAGE}
+    ports:
+      - "8080:80"
+    restart: always
+
+  athena-worker:
+    image: ${WORKER_IMAGE}
+    ports:
+      - "8081:80"
+    restart: always
