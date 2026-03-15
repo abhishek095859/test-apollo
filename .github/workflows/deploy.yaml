@@ -86,7 +86,7 @@ jobs:
               "echo \"$COMPOSE_BASE64\" | base64 -d > ~/athena-app/docker-compose.yml",
               "echo \"FRONTEND_IMAGE=${{ needs.build.outputs.FRONTEND_IMAGE }}\" > ~/athena-app/.env",
               "echo \"BACKEND_IMAGE=${{ needs.build.outputs.BACKEND_IMAGE }}\" >> ~/athena-app/.env",
-              "echo \"RND_IMAGE=${{ needs.build.outputs.RND_IMAGE_IMAGE }}\" >> ~/athena-app/.env",
+              "echo \"RND_IMAGE=${{ needs.build.outputs.RND_IMAGE }}\" >> ~/athena-app/.env",
               "cd ~/athena-app && docker compose pull",
               "cd ~/athena-app && docker compose up -d",
               "docker ps"
