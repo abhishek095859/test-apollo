@@ -13,8 +13,8 @@ services:
       - "8080:80"
     restart: always
 
-  athena-worker:
-    image: ${WORKER_IMAGE}
+  athena-rnd:
+    image: ${RND_IMAGE}
     ports:
       - "8081:80"
     restart: always
