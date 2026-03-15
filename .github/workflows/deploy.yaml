@@ -15,14 +15,10 @@ jobs:
         include:
           - folder: "./frontend"
             tag: "web-latest"
-            key: "FRONTEND_IMAGE"
           - folder: "./backend"
             tag: "api-latest"
-            key: "BACKEND_IMAGE"
           - folder: "./rnd-logic/rnd" 
             tag: "rnd-latest"
-            key: "RND_IMAGE"
-    # We remove the complex outputs here and use a simpler method in the deploy job
     steps:
       - name: Checkout Main Repo
         uses: actions/checkout@v4
@@ -48,7 +44,6 @@ jobs:
           REPO_NAME="atl_apac_mum_dtlk_prod_athena2.0_ecr_01"
           REGISTRY=${{ steps.login-ecr.outputs.registry }}
           FULL_IMAGE=$REGISTRY/$REPO_NAME:${{ matrix.tag }}
-          
           docker build -t $FULL_IMAGE ${{ matrix.folder }}
           docker push $FULL_IMAGE
 
@@ -78,11 +73,16 @@ jobs:
               "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin '$REGISTRY'",
               "mkdir -p /home/ec2-user/athena-app",
               "echo \"$COMPOSE_BASE64\" | base64 -d > /home/ec2-user/athena-app/docker-compose.yml",
+              
+              # ENSURE THESE NAMES MATCH YOUR DOCKER-COMPOSE.YML EXACTLY
               "echo \"FRONTEND_IMAGE=$REGISTRY/$REPO:web-latest\" > /home/ec2-user/athena-app/.env",
               "echo \"BACKEND_IMAGE=$REGISTRY/$REPO:api-latest\" >> /home/ec2-user/athena-app/.env",
               "echo \"WORKER_IMAGE=$REGISTRY/$REPO:rnd-latest\" >> /home/ec2-user/athena-app/.env",
+              
               "cd /home/ec2-user/athena-app",
-              "docker compose pull",
-              "docker compose up -d --force-recreate",
+              "docker compose down", # Stop everything first to clear the 36-hour old state
+              "docker compose pull", # Pull the absolute latest from ECR
+              "docker compose up -d", # Start fresh
+              "docker image prune -f", # Delete old image versions to save space
               "docker ps"
             ]}'
