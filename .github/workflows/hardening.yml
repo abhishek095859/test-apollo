@@ -1,0 +1,33 @@
+name: " OS Hardening"
+
+on:
+  workflow_dispatch: 
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  run-hardening:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::185863138492:role/crossaccountb 
+          aws-region: ap-south-1
+
+      - name: Execute Setup via SSM
+        run: |
+          # Read the script file from the root of your repo
+          RAW_SCRIPT=$(cat setup.sh)
+          
+          # Send the command to all instances tagged project=athena2.0
+          aws ssm send-command \
+            --targets "Key=tag:Name,Values=test-apollo" \
+            --document-name "AWS-RunShellScript" \
+            --parameters "{\"commands\":[\"$RAW_SCRIPT\"]}" \
+            --region ap-south-1
