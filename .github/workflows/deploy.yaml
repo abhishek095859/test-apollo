@@ -1,4 +1,4 @@
-name: "3-Tier Deployment with Docker Compose"
+name: "Multi-Repo 3-Tier Deployment"
 
 on:
   workflow_dispatch:
@@ -19,17 +19,25 @@ jobs:
           - folder: "./backend"
             tag: "api-latest"
             key: "BACKEND_IMAGE"
-          - folder: "./worker"
-            tag: "worker-latest"
-            key: "WORKER_IMAGE"
+          # THIS IS THE PART WE UPDATED BASED ON YOUR IMAGE
+          - folder: "./rnd-logic/rnd" 
+            tag: "rnd-latest"
+            key: "RND_IMAGE"
     outputs:
-      # These collect the URIs from the matrix to pass to the deploy job
       FRONTEND_IMAGE: ${{ steps.save.outputs.FRONTEND_IMAGE }}
       BACKEND_IMAGE: ${{ steps.save.outputs.BACKEND_IMAGE }}
-      WORKER_IMAGE: ${{ steps.save.outputs.WORKER_IMAGE }}
+      RND_IMAGE: ${{ steps.save.outputs.RND_IMAGE }}
     
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Main Repo (Frontend/Backend)
+        uses: actions/checkout@v4
+
+      - name: Checkout Worker Repo
+        uses: actions/checkout@v4
+        with:
+          repository: "abhishek095859/test-cross" # Your repo from the image
+          path: "rnd-logic" # The "Box" we put it in
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -41,24 +49,22 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and Push
+        id: save
         run: |
-          # UPDATED: Using your specific ECR repo name
           REPO_NAME="atl_apac_mum_dtlk_prod_athena2.0_ecr_01"
-          FULL_IMAGE=${{ steps.login-ecr.outputs.registry }}/$REPO_NAME:${{ matrix.tag }}
+          REGISTRY=${{ steps.login-ecr.outputs.registry }}
+          FULL_IMAGE=$REGISTRY/$REPO_NAME:${{ matrix.tag }}
           
           docker build -t $FULL_IMAGE ${{ matrix.folder }}
           docker push $FULL_IMAGE
           
-          # This sets the specific key (e.g. FRONTEND_IMAGE) for this matrix run
           echo "${{ matrix.key }}=$FULL_IMAGE" >> $GITHUB_OUTPUT
-        id: save
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      # 1. ADD THIS STEP - This pulls your code so the runner sees docker-compose.yml
-      - name: Checkout Code
+      - name: Checkout Main Repo
         uses: actions/checkout@v4
 
       - name: Configure AWS credentials
@@ -69,20 +75,18 @@ jobs:
 
       - name: Deploy Stack via SSM
         run: |
-          # 1. Encode the file
           COMPOSE_BASE64=$(base64 -w 0 docker-compose.yml)
 
-          # 2. Send the command with proper quoting
           aws ssm send-command \
             --targets "Key=tag:project,Values=athena2.0" \
             --document-name "AWS-RunShellScript" \
             --parameters 'commands=[
-              "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 185863138492.dkr.ecr.ap-south-1.amazonaws.com/atl_apac_mum_dtlk_prod_athena2.0_ecr_01:web-latest",
+              "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 185863138492.dkr.ecr.ap-south-1.amazonaws.com",
               "mkdir -p ~/athena-app",
-              "echo '$COMPOSE_BASE64' | base64 -d > ~/athena-app/docker-compose.yml",
-              "echo \"FRONTEND_IMAGE=185863138492.dkr.ecr.ap-south-1.amazonaws.com/atl_apac_mum_dtlk_prod_athena2.0_ecr_01:web-latest\" > ~/athena-app/.env",
-              "echo \"BACKEND_IMAGE=185863138492.dkr.ecr.ap-south-1.amazonaws.com/atl_apac_mum_dtlk_prod_athena2.0_ecr_01:api-latest\" >> ~/athena-app/.env",
-              "echo \"WORKER_IMAGE=185863138492.dkr.ecr.ap-south-1.amazonaws.com/atl_apac_mum_dtlk_prod_athena2.0_ecr_01:worker-latest\" >> ~/athena-app/.env",
+              "echo \"$COMPOSE_BASE64\" | base64 -d > ~/athena-app/docker-compose.yml",
+              "echo \"FRONTEND_IMAGE=${{ needs.build.outputs.FRONTEND_IMAGE }}\" > ~/athena-app/.env",
+              "echo \"BACKEND_IMAGE=${{ needs.build.outputs.BACKEND_IMAGE }}\" >> ~/athena-app/.env",
+              "echo \"RND_IMAGE=${{ needs.build.outputs.RND_IMAGE_IMAGE }}\" >> ~/athena-app/.env",
               "cd ~/athena-app && docker compose pull",
               "cd ~/athena-app && docker compose up -d",
               "docker ps"
