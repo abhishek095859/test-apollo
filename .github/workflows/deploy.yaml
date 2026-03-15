@@ -69,20 +69,17 @@ jobs:
           aws ssm send-command \
             --targets "Key=tag:project,Values=athena2.0" \
             --document-name "AWS-RunShellScript" \
-            --parameters '{"commands":[
-              "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin '$REGISTRY'",
-              "mkdir -p /home/ec2-user/athena-app",
-              "echo \"$COMPOSE_BASE64\" | base64 -d > /home/ec2-user/athena-app/docker-compose.yml",
-              
-              # ENSURE THESE NAMES MATCH YOUR DOCKER-COMPOSE.YML EXACTLY
-              "echo \"FRONTEND_IMAGE=$REGISTRY/$REPO:web-latest\" > /home/ec2-user/athena-app/.env",
-              "echo \"BACKEND_IMAGE=$REGISTRY/$REPO:api-latest\" >> /home/ec2-user/athena-app/.env",
-              "echo \"WORKER_IMAGE=$REGISTRY/$REPO:rnd-latest\" >> /home/ec2-user/athena-app/.env",
-              
-              "cd /home/ec2-user/athena-app",
-              "docker compose down", # Stop everything first to clear the 36-hour old state
-              "docker compose pull", # Pull the absolute latest from ECR
-              "docker compose up -d", # Start fresh
-              "docker image prune -f", # Delete old image versions to save space
-              "docker ps"
-            ]}'
+            --parameters "{\"commands\":[
+              \"aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin $REGISTRY\",
+              \"mkdir -p /home/ec2-user/athena-app\",
+              \"echo '$COMPOSE_BASE64' | base64 -d > /home/ec2-user/athena-app/docker-compose.yml\",
+              \"echo 'FRONTEND_IMAGE=$REGISTRY/$REPO:web-latest' > /home/ec2-user/athena-app/.env\",
+              \"echo 'BACKEND_IMAGE=$REGISTRY/$REPO:api-latest' >> /home/ec2-user/athena-app/.env\",
+              \"echo 'RND_IMAGE=$REGISTRY/$REPO:rnd-latest' >> /home/ec2-user/athena-app/.env\",
+              \"cd /home/ec2-user/athena-app\",
+              \"docker compose down\",
+              \"docker compose pull\",
+              \"docker compose up -d\",
+              \"docker image prune -f\",
+              \"docker ps\"
+            ]}"
