@@ -68,26 +68,21 @@ jobs:
       - name: Deploy Stack via SSM
         run: |
           COMPOSE_BASE64=$(base64 -w 0 docker-compose.yml)
-          
-          # We define the URIs here directly to avoid matrix output errors
           REGISTRY="185863138492.dkr.ecr.ap-south-1.amazonaws.com"
           REPO="atl_apac_mum_dtlk_prod_athena2.0_ecr_01"
 
           aws ssm send-command \
             --targets "Key=tag:project,Values=athena2.0" \
             --document-name "AWS-RunShellScript" \
-            --parameters 'commands=[
+            --parameters '{"commands":[
               "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin '$REGISTRY'",
-              "mkdir -p ~/athena-app",
-              "echo \"$COMPOSE_BASE64\" | base64 -d > ~/athena-app/docker-compose.yml",
-              
-              # Constructing the .env with the direct ECR paths
-              "echo \"FRONTEND_IMAGE='$REGISTRY'/'$REPO':web-latest\" > ~/athena-app/.env",
-              "echo \"BACKEND_IMAGE='$REGISTRY'/'$REPO':api-latest\" >> ~/athena-app/.env",
-              "echo \"RND_IMAGE='$REGISTRY'/'$REPO':rnd-latest\" >> ~/athena-app/.env",
-              
-              "cd ~/athena-app",
+              "mkdir -p /home/ec2-user/athena-app",
+              "echo \"$COMPOSE_BASE64\" | base64 -d > /home/ec2-user/athena-app/docker-compose.yml",
+              "echo \"FRONTEND_IMAGE=$REGISTRY/$REPO:web-latest\" > /home/ec2-user/athena-app/.env",
+              "echo \"BACKEND_IMAGE=$REGISTRY/$REPO:api-latest\" >> /home/ec2-user/athena-app/.env",
+              "echo \"WORKER_IMAGE=$REGISTRY/$REPO:rnd-latest\" >> /home/ec2-user/athena-app/.env",
+              "cd /home/ec2-user/athena-app",
               "docker compose pull",
               "docker compose up -d --force-recreate",
               "docker ps"
-            ]'
+            ]}'
