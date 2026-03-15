@@ -22,12 +22,13 @@ jobs:
 
       - name: Execute Setup via SSM
         run: |
-          # Read the script file from the root of your repo
-          RAW_SCRIPT=$(cat setup.sh)
-          
-          # Send the command to all instances tagged project=athena2.0
+          # 1. Use jq to safely package your script into a JSON structure
+          # This handles all escaping (newlines, quotes, etc.) automatically.
+          jq -n --arg script "$(cat setup.sh)" '{"commands": [$script]}' > ssm_params.json
+
+          # 2. Run the command using the file reference
           aws ssm send-command \
             --targets "Key=tag:Name,Values=test-apollo" \
             --document-name "AWS-RunShellScript" \
-            --parameters "{\"commands\":[\"$RAW_SCRIPT\"]}" \
+            --parameters file://ssm_params.json \
             --region ap-south-1
