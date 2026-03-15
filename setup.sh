@@ -92,8 +92,8 @@ run_step "CloudWatch Config" 'sudo tee /opt/aws/amazon-cloudwatch-agent/etc/amaz
 }
 EOF'
 
-sudo systemctl enable amazon-cloudwatch-agent
-sudo systemctl start amazon-cloudwatch-agent
+#sudo systemctl enable amazon-cloudwatch-agent
+#sudo systemctl start amazon-cloudwatch-agent
 
 #########################################
 # S3 & DNS
