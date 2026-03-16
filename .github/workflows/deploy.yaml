@@ -2,6 +2,12 @@ name: "Multi-Repo 3-Tier Deployment"
 
 on:
   workflow_dispatch:
+    inputs:
+      worker_branch:
+        description: 'Branch to pull from Repo 2'
+        required: true
+        default: 'main'
+        type: string
 
 permissions:
   id-token: write
@@ -28,6 +34,7 @@ jobs:
         with:
           repository: "abhishek095859/test-cross"
           path: "rnd-logic"
+          ref: ${{ github.event.inputs.worker_branch }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
