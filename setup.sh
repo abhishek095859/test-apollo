@@ -54,7 +54,7 @@ sudo cp /etc/snmp/snmpd.conf /etc/snmp/snmpd.conf.bkp || true
 sudo sed -i '/^view systemview/s/^/#/' /etc/snmp/snmpd.conf
 
 # Secure Daemon Configuration
-run_step "SNMP Daemon Config" 'sudo tee -a /etc/snmp/snmpd.conf <<EOF
+run_step "SNMP Daemon Config" 'sudo tee /etc/snmp/snmpd.conf <<EOF
 agentAddress udp:0.0.0.0:161,udp6:[::]:161
 createUser snmpuser SHA "snmpuser135" AES "snmpuser135"
 rouser snmpuser authpriv .1
