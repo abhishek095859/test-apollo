@@ -28,7 +28,7 @@ jobs:
 
           # 2. Run the command using the file reference
           aws ssm send-command \
-            --targets "Key=tag:Name,Values=test1234" \
+            --targets "Key=tag:Name,Values=test-apollo" \
             --document-name "AWS-RunShellScript" \
             --parameters file://ssm_params.json \
             --region ap-south-1
