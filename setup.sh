@@ -98,7 +98,9 @@ sudo systemctl start amazon-cloudwatch-agent
 #########################################
 # S3 & DNS
 #########################################
-run_step "S3 Copy Outputs" "aws s3 cp s3://my-terraform-tftate/outputs.tf && chown ec2-user:ec2-user /home/ec2-user/outputs.tf"
+#run_step "S3 Copy Outputs" "aws s3 cp s3://my-terraform-tftate/outputs.tf && chown ec2-user:ec2-user /home/ec2-user/outputs.tf"
+# Correct syntax: aws s3 cp [SOURCE] [DESTINATION]
+run_step "S3 Copy Outputs" "aws s3 cp s3://my-terraform-tftate/outputs.tf /home/ec2-user/outputs.tf && chown ec2-user:ec2-user /home/ec2-user/outputs.tf"
 
 run_step "DNS Hardening" 'sudo tee /etc/resolv.conf <<EOF
 nameserver 10.99.0.162
