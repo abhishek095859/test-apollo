@@ -20,29 +20,9 @@ run_step() {
     fi
 }
 
-# #########################################
-# # DOCKER INSTALL
-# #########################################
-# run_step "Update and Docker Install" "sudo yum update -y && sudo yum install -y docker"
-
-# sudo systemctl start docker
-# sudo systemctl enable docker
-
-# ########################################
-# # Docker Compose Install
-# ########################################
-# run_step "Docker Compose Setup" "sudo mkdir -p /usr/libexec/docker/cli-plugins && \
-# sudo curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 -o /usr/libexec/docker/cli-plugins/docker-compose"
-
-# sudo chmod +x /usr/libexec/docker/cli-plugins/docker-compose
-# sudo docker compose version
-
 #########################################
 #s3
 #########################################
-#run_step "S3 Copy Outputs" "aws s3 cp s3://my-terraform-tftate/outputs.tf /home/ec2-user/outputs.tf && chown ec2-user:ec2-user /home/ec2-user/outputs.tf"
-#run_step "S3 Copy Outputs" "aws s3 cp s3://my-terraform-tftate/outputs.tf /home/ec2-user/outputs.tf --path-style && chown ec2-user:ec2-user /home/ec2-user/outputs.tf"
-# 1. We download the file
 run_step "S3 Download" "aws s3 cp s3://my-terraform-tftate/outputs.tf /home/ec2-user/outputs.tf"
 
 # 2. We change the ownership as a separate step
@@ -108,10 +88,10 @@ sudo systemctl start amazon-cloudwatch-agent
 # DNS
 #########################################
 
-#run_step "DNS Hardening" 'sudo tee /etc/resolv.conf <<EOF
-#nameserver 10.99.0.162
-#nameserver 172.19.0.127
-#EOF'
+run_step "DNS Hardening" 'sudo tee /etc/resolv.conf <<EOF
+nameserver 10.99.0.162
+nameserver 172.19.0.127
+EOF'
 
 echo "----------------------------------------------------"
 echo "Setup script completed successfully"
