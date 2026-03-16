@@ -6,7 +6,7 @@ on:
       worker_branch:
         description: 'Branch to pull from Repo 2'
         required: true
-        default: 'main'
+        #default: 'main'
         type: string
 
 permissions:
