@@ -20,22 +20,22 @@ run_step() {
     fi
 }
 
-#########################################
-# DOCKER INSTALL
-#########################################
-run_step "Update and Docker Install" "sudo yum update -y && sudo yum install -y docker"
+# #########################################
+# # DOCKER INSTALL
+# #########################################
+# run_step "Update and Docker Install" "sudo yum update -y && sudo yum install -y docker"
 
-sudo systemctl start docker
-sudo systemctl enable docker
+# sudo systemctl start docker
+# sudo systemctl enable docker
 
-########################################
-# Docker Compose Install
-########################################
-run_step "Docker Compose Setup" "sudo mkdir -p /usr/libexec/docker/cli-plugins && \
-sudo curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 -o /usr/libexec/docker/cli-plugins/docker-compose"
+# ########################################
+# # Docker Compose Install
+# ########################################
+# run_step "Docker Compose Setup" "sudo mkdir -p /usr/libexec/docker/cli-plugins && \
+# sudo curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 -o /usr/libexec/docker/cli-plugins/docker-compose"
 
-sudo chmod +x /usr/libexec/docker/cli-plugins/docker-compose
-sudo docker compose version
+# sudo chmod +x /usr/libexec/docker/cli-plugins/docker-compose
+# sudo docker compose version
 
 #########################################
 #s3
