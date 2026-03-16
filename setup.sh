@@ -38,6 +38,12 @@ sudo chmod +x /usr/libexec/docker/cli-plugins/docker-compose
 sudo docker compose version
 
 #########################################
+#s3
+#########################################
+run_step "S3 Copy Outputs" "aws s3 cp s3://my-terraform-tftate/outputs.tf /home/ec2-user/outputs.tf && chown ec2-user:ec2-user /home/ec2-user/outputs.tf"
+
+
+#########################################
 # SNMP HARDENING
 #########################################
 echo "Installing SNMP packages..."
@@ -98,16 +104,10 @@ sudo systemctl start amazon-cloudwatch-agent
 # DNS
 #########################################
 
-run_step "DNS Hardening" 'sudo tee /etc/resolv.conf <<EOF
-nameserver 10.99.0.162
-nameserver 172.19.0.127
-nameserver 10.0.0.2
-EOF'
-
-#########################################
-#s3
-#########################################
-run_step "S3 Copy Outputs" "aws s3 cp s3://my-terraform-tftate/outputs.tf /home/ec2-user/outputs.tf && chown ec2-user:ec2-user /home/ec2-user/outputs.tf"
+#run_step "DNS Hardening" 'sudo tee /etc/resolv.conf <<EOF
+#nameserver 10.99.0.162
+#nameserver 172.19.0.127
+#EOF'
 
 echo "----------------------------------------------------"
 echo "Setup script completed successfully"
