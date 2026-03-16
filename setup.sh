@@ -7,7 +7,7 @@ run_step() {
     
     echo "----------------------------------------------------"
     echo "STEP: $STEP_NAME"
-    if eval "$CMD"; then
+    if eval "$CMD" 2>&1; then
         echo "SUCCESS: $STEP_NAME"
     else
         echo "[!] FAIL: $STEP_NAME. Retrying in 60s..."
@@ -41,8 +41,12 @@ run_step() {
 #s3
 #########################################
 #run_step "S3 Copy Outputs" "aws s3 cp s3://my-terraform-tftate/outputs.tf /home/ec2-user/outputs.tf && chown ec2-user:ec2-user /home/ec2-user/outputs.tf"
-run_step "S3 Copy Outputs" "aws s3 cp s3://my-terraform-tftate/outputs.tf /home/ec2-user/outputs.tf --path-style && chown ec2-user:ec2-user /home/ec2-user/outputs.tf"
+#run_step "S3 Copy Outputs" "aws s3 cp s3://my-terraform-tftate/outputs.tf /home/ec2-user/outputs.tf --path-style && chown ec2-user:ec2-user /home/ec2-user/outputs.tf"
+# 1. We download the file
+run_step "S3 Download" "aws s3 cp s3://my-terraform-tftate/outputs.tf /home/ec2-user/outputs.tf --path-style"
 
+# 2. We change the ownership as a separate step
+run_step "S3 Set Permissions" "sudo chown ec2-user:ec2-user /home/ec2-user/outputs.tf"
 #########################################
 # SNMP HARDENING
 #########################################
