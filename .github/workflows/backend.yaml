@@ -1,4 +1,4 @@
-name: "Frontend CI - ECR Push"
+name: "Backend CI - ECR Push"
 
 on:
   push:
