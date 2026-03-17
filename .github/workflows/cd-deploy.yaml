@@ -1,0 +1,43 @@
+name: "CD - Deploy"
+
+on:
+  workflow_dispatch: # Manual trigger for controlled deployments
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::185863138492:role/crossaccountb
+          aws-region: ap-south-1
+
+      - name: Deploy via SSM
+        run: |
+          # 1. Prepare variables
+          REGISTRY="185863138492.dkr.ecr.ap-south-1.amazonaws.com"
+          REPO="atl_apac_mum_dtlk_prod_athena2.0_ecr_01"
+          COMPOSE_BASE64=$(base64 -w 0 docker-compose.yml)
+
+          # 2. Execute command on EC2
+          aws ssm send-command \
+            --targets "Key=tag:Name,Values=ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-01" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Full Stack Deployment" \
+            --parameters "{\"commands\":[
+              \"aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin $REGISTRY\",
+              \"mkdir -p /home/ec2-user/athena-app\",
+              \"echo '$COMPOSE_BASE64' | base64 -d > /home/ec2-user/athena-app/docker-compose.yml\",
+              \"cd /home/ec2-user/athena-app\",
+              \"docker compose pull\",
+              \"docker compose up -d\",
+              \"docker image prune -f\"
+            ]}" \
