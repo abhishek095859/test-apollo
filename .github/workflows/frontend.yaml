@@ -41,6 +41,7 @@ jobs:
       - name: Deploy to Private EC2 via SSM
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPO: "atl_apac_mum_dtlk_prod_athena2.0_ecr_01"
         run: |
           # 1. Convert local docker-compose.yml to base64 for safe transfer
           COMPOSE_BASE64=$(base64 -w 0 docker-compose.yml)
