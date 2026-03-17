@@ -37,7 +37,7 @@ jobs:
           REPO: "atl_apac_mum_dtlk_prod_athena2.0_ecr_01"
           # TIP: You might want to use the branch name as the tag 
           # so your feature build doesn't overwrite your production 'latest'
-          IMAGE_TAG: "web-latest" 
+          IMAGE_TAG: "api-latest" 
         run: |
           docker build -t $REGISTRY/$REPO:$IMAGE_TAG ./backend
           docker push $REGISTRY/$REPO:$IMAGE_TAG
