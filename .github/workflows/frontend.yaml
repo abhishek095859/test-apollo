@@ -1,0 +1,44 @@
+name: "Frontend CI - ECR Push"
+
+on:
+  push:
+    # Adding feature branches to the list
+    branches: 
+      - main
+      - dev
+      - 'feature/**'          # This covers feature/cicd, feature/login, etc.
+    paths:
+      - 'frontend/**'
+      - 'docker-compose.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::185863138492:role/crossaccountb
+          aws-region: ap-south-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, Tag, and Push Frontend Image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPO: "atl_apac_mum_dtlk_prod_athena2.0_ecr_01"
+          # TIP: You might want to use the branch name as the tag 
+          # so your feature build doesn't overwrite your production 'latest'
+          IMAGE_TAG: "web-latest" 
+        run: |
+          docker build -t $REGISTRY/$REPO:$IMAGE_TAG ./frontend
+          docker push $REGISTRY/$REPO:$IMAGE_TAG
