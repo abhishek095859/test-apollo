@@ -6,7 +6,8 @@ const server = http.createServer((req, res) => {
         version: "1.0.0",
         status: "Healthy",
         timestamp: new Date(),
-        app: "backend"
+        app: "backend",
+        modified: "backend folder"
     }));
 });
 server.listen(80); // Docker internal port
