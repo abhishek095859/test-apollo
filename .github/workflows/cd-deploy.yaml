@@ -29,7 +29,7 @@ jobs:
 
           # 2. Execute command on EC2
           aws ssm send-command \
-            --targets "Key=tag:Name,Values=ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-01" \
+            --targets "Key=tag:Name,Values=ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-01,ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-02" \
             --document-name "AWS-RunShellScript" \
             --comment "Full Stack Deployment" \
             --parameters "{\"commands\":[
