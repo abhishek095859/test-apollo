@@ -9,7 +9,6 @@ on:
       - 'feature/**'          # This covers feature/cicd, feature/login, etc.
     paths:
       - 'frontend/**'
-      - 'docker-compose.yml'
 
 permissions:
   id-token: write
