@@ -1,20 +1,24 @@
-name: "Frontend - Build & Deploy"
+name: Frontend - Build & Deploy
 
 on:
   push:
-    branches: 
+    branches:
       - main
       - 'dev/**'
-      - 'feature/**'          # Triggers on your branch automatically
+      - 'feature/**'
     paths:
-      - 'frontend/**'         # Only runs if code inside frontend folder changes 
+      - 'frontend/**'
+
 permissions:
-  id-token: write      # Required for OIDC AWS Auth
-  contents: read       # Required for Checkout
+  id-token: write
+  contents: read
 
 jobs:
-  build-and-deploy:
+
+  build:
+    name: Build & Push Docker Image
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -32,21 +36,38 @@ jobs:
       - name: Build and Push Frontend Image
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPO: "atl_apac_mum_dtlk_prod_athena2.0_ecr_01"
+          REPO: atl_apac_mum_dtlk_prod_athena2.0_ecr_01
         run: |
-          # Build specifically from the frontend directory
           docker build -t $REGISTRY/$REPO:web-latest ./frontend
           docker push $REGISTRY/$REPO:web-latest
+
+
+  deploy:
+    name: Deploy to EC2 via SSM
+    runs-on: ubuntu-latest
+    needs: build   # deploy runs only after build job succeeds
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::185863138492:role/crossaccountb
+          aws-region: ap-south-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Deploy to Private EC2 via SSM
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPO: "atl_apac_mum_dtlk_prod_athena2.0_ecr_01"
+          REPO: atl_apac_mum_dtlk_prod_athena2.0_ecr_01
         run: |
-          # 1. Convert local docker-compose.yml to base64 for safe transfer
           COMPOSE_BASE64=$(base64 -w 0 docker-compose.yml)
-          
-          # 2. Execute targeted update on the EC2
+
           aws ssm send-command \
             --targets "Key=tag:Name,Values=ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-01,ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-02" \
             --document-name "AWS-RunShellScript" \
@@ -55,13 +76,11 @@ jobs:
               \"aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin $REGISTRY\",
               \"mkdir -p /home/ec2-user/athena-app\",
               \"echo '$COMPOSE_BASE64' | base64 -d > /home/ec2-user/athena-app/docker-compose.yml\",
-              # THE SMART PART: Only update the FRONTEND_IMAGE line. 
-              # If the file doesn't exist, create it. If the line doesn't exist, append it.
               \"touch /home/ec2-user/athena-app/.env\",
               \"sed -i 's|^FRONTEND_IMAGE=.*|FRONTEND_IMAGE=$REGISTRY/$REPO:web-latest|' /home/ec2-user/athena-app/.env || echo 'FRONTEND_IMAGE=$REGISTRY/$REPO:web-latest' >> /home/ec2-user/athena-app/.env\",
               \"cd /home/ec2-user/athena-app\",
               \"docker compose pull athena-frontend\",
               \"docker compose up -d athena-frontend\",
               \"docker image prune -f\",
-             \"docker ps\"
-            ]}" 
+              \"docker ps\"
+            ]}"
