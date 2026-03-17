@@ -28,7 +28,7 @@ jobs:
 
           # 2. Run the command using the file reference
           aws ssm send-command \
-            --targets "Key=tag:project,Values=athena2.0" \
+            --targets "Key=tag:project,Values=ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-01,ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-02" \
             --document-name "AWS-RunShellScript" \
             --parameters file://ssm_params.json \
             --region ap-south-1
