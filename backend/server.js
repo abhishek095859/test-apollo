@@ -5,7 +5,8 @@ const server = http.createServer((req, res) => {
         service: "Athena Backend API",
         version: "1.0.0",
         timestamp: new Date(),
-        app: "backend"
+        app: "backend",
+        status: "health"
     }));
 });
 server.listen(80); // Docker internal port
