@@ -1,12 +1,11 @@
-name: "Backend CI - ECR Push"
+name: Backend - Build & Deploy
 
 on:
   push:
-    # Adding feature branches to the list
-    branches: 
+    branches:
       - main
       - 'dev/**'
-      - 'feature/**'          # This covers feature/cicd, feature/login, etc.
+      - 'feature/**'
     paths:
       - 'backend/**'
 
@@ -15,8 +14,11 @@ permissions:
   contents: read
 
 jobs:
-  build-and-push:
+
+  build:
+    name: Build & Push Docker Image
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -31,13 +33,54 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, Tag, and Push Backend Image
+      - name: Build and Push Backend Image
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPO: "atl_apac_mum_dtlk_prod_athena2.0_ecr_01"
-          # TIP: You might want to use the branch name as the tag 
-          # so your feature build doesn't overwrite your production 'latest'
-          IMAGE_TAG: "api-latest" 
+          REPO: atl_apac_mum_dtlk_prod_athena2.0_ecr_01
         run: |
-          docker build -t $REGISTRY/$REPO:$IMAGE_TAG ./backend
-          docker push $REGISTRY/$REPO:$IMAGE_TAG
+          docker build -t $REGISTRY/$REPO:api-latest ./backend
+          docker push $REGISTRY/$REPO:api-latest
+
+
+  deploy:
+    name: Deploy to EC2 via SSM
+    runs-on: ubuntu-latest
+    needs: build   # deploy runs only after build job succeeds
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::185863138492:role/crossaccountb
+          aws-region: ap-south-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Deploy to Private EC2 via SSM
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPO: atl_apac_mum_dtlk_prod_athena2.0_ecr_01
+        run: |
+          COMPOSE_BASE64=$(base64 -w 0 docker-compose.yml)
+
+          aws ssm send-command \
+            --targets "Key=tag:Name,Values=ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-01,ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-02" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Auto-updating Backend Service" \
+            --parameters "{\"commands\":[
+              \"aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin $REGISTRY\",
+              \"mkdir -p /home/ec2-user/athena-app\",
+              \"echo '$COMPOSE_BASE64' | base64 -d > /home/ec2-user/athena-app/docker-compose.yml\",
+              \"touch /home/ec2-user/athena-app/.env\",
+              \"sed -i 's|^BACKEND_IMAGE=.*|BACKEND_IMAGE=$REGISTRY/$REPO:api-latest|' /home/ec2-user/athena-app/.env || echo 'BACKEND_IMAGE=$REGISTRY/$REPO:api-latest' >> /home/ec2-user/athena-app/.env\",
+              \"cd /home/ec2-user/athena-app\",
+              \"docker compose pull athena-backend\",
+              \"docker compose up -d athena-backend\",
+              \"docker image prune -f\",
+              \"docker ps\"
+            ]}"
