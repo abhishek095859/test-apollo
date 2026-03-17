@@ -4,8 +4,6 @@ const server = http.createServer((req, res) => {
     res.end(JSON.stringify({
         service: "Athena Backend API",
         version: "1.0.0",
-        timestamp: new Date(),
-        app: "backend",
         status: "health"
     }));
 });
