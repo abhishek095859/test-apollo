@@ -1,21 +1,19 @@
-name: "Frontend CI - ECR Push"
+name: "Frontend - Build & Deploy"
 
 on:
   push:
-    # Adding feature branches to the list
     branches: 
       - main
-      - dev
-      - 'feature/**'          # This covers feature/cicd, feature/login, etc.
+      - 'dev/**'
+      - 'feature/**'          # Triggers on your branch automatically
     paths:
-      - 'frontend/**'
-
+      - 'frontend/**'         # Only runs if code inside frontend folder changes 
 permissions:
-  id-token: write
-  contents: read
+  id-token: write      # Required for OIDC AWS Auth
+  contents: read       # Required for Checkout
 
 jobs:
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -31,13 +29,34 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, Tag, and Push Frontend Image
+      - name: Build and Push Frontend Image
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPO: "atl_apac_mum_dtlk_prod_athena2.0_ecr_01"
-          # TIP: You might want to use the branch name as the tag 
-          # so your feature build doesn't overwrite your production 'latest'
-          IMAGE_TAG: "web-latest" 
         run: |
-          docker build -t $REGISTRY/$REPO:$IMAGE_TAG ./frontend
-          docker push $REGISTRY/$REPO:$IMAGE_TAG
+          # Build specifically from the frontend directory
+          docker build -t $REGISTRY/$REPO:web-latest ./frontend
+          docker push $REGISTRY/$REPO:web-latest
+
+      - name: Deploy to Private EC2 via SSM
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          # 1. Convert local docker-compose.yml to base64 for safe transfer
+          COMPOSE_BASE64=$(base64 -w 0 docker-compose.yml)
+          
+          # 2. Execute targeted update on the EC2
+          aws ssm send-command \
+            --targets "Key=tag:Name,Values=ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-01,ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-02" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Auto-updating Frontend Service" \
+            --parameters "{\"commands\":[
+              \"aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin $REGISTRY\",
+              \"mkdir -p /home/ec2-user/athena-app\",
+              \"echo '$COMPOSE_BASE64' | base64 -d > /home/ec2-user/athena-app/docker-compose.yml\",
+              \"cd /home/ec2-user/athena-app\",
+              \"docker compose pull athena-frontend\",
+              \"docker compose up -d athena-frontend\",
+              \"docker image prune -f\",
+             \"docker ps\"
+            ]}" 
