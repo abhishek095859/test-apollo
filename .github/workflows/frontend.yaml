@@ -55,6 +55,10 @@ jobs:
               \"aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin $REGISTRY\",
               \"mkdir -p /home/ec2-user/athena-app\",
               \"echo '$COMPOSE_BASE64' | base64 -d > /home/ec2-user/athena-app/docker-compose.yml\",
+              # THE SMART PART: Only update the FRONTEND_IMAGE line. 
+              # If the file doesn't exist, create it. If the line doesn't exist, append it.
+              \"touch /home/ec2-user/athena-app/.env\",
+              \"sed -i 's|^FRONTEND_IMAGE=.*|FRONTEND_IMAGE=$REGISTRY/$REPO:web-latest|' /home/ec2-user/athena-app/.env || echo 'FRONTEND_IMAGE=$REGISTRY/$REPO:web-latest' >> /home/ec2-user/athena-app/.env\",
               \"cd /home/ec2-user/athena-app\",
               \"docker compose pull athena-frontend\",
               \"docker compose up -d athena-frontend\",
