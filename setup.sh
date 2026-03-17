@@ -23,10 +23,10 @@ run_step() {
 #########################################
 #s3
 #########################################
-run_step "S3 Download" "aws s3 cp s3://my-terraform-tftate/outputs.tf /home/ec2-user/outputs.tf"
+run_step "S3 Download" "aws s3 cp s3://my-terraform-tftate/provider.tf /home/ec2-user/provider.tf"
 
 # 2. We change the ownership as a separate step
-run_step "S3 Set Permissions" "sudo chown ec2-user:ec2-user /home/ec2-user/outputs.tf"
+run_step "S3 Set Permissions" "sudo chown ec2-user:ec2-user /home/ec2-user/provider.tf"
 #########################################
 # SNMP HARDENING
 #########################################
