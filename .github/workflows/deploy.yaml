@@ -33,6 +33,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: "abhishek095859/test-cross"
+          token: ${{ secrets.APP_REPO_TOKEN }}
           path: "rnd-logic"
           ref: ${{ github.event.inputs.worker_branch }}
 
