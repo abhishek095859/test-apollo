@@ -68,7 +68,18 @@ jobs:
           REPO: atl_apac_mum_dtlk_prod_athena2.0_ecr_01
         run: |
           COMPOSE_BASE64=$(base64 -w 0 docker-compose.yml)
-          ENV_BASE64=$(echo -e "DB_PASSWORD=${{ secrets.DB_PASSWORD }}\nAPI_KEY=${{ secrets.API_KEY }}" | base64 -w 0)
+
+          printf "FRONTEND_IMAGE=%s/%s:web-latest\nBACKEND_IMAGE=%s/%s:api-latest\nRND_IMAGE=%s/%s:rnd-latest\n" \
+            "${{ env.REGISTRY }}" "${{ env.REPO }}" \
+            "${{ env.REGISTRY }}" "${{ env.REPO }}" \
+            "${{ env.REGISTRY }}" "${{ env.REPO }}" > .env.images
+          IMAGES_BASE64=$(base64 -w 0 .env.images)
+
+          cat <<EOF > .env.secrets
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          API_KEY=${{ secrets.API_KEY }}
+          EOF
+          SECRETS_BASE64=$(base64 -w 0 .env.secrets)
 
           aws ssm send-command \
             --targets "Key=tag:Name,Values=ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-01,ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-02" \
@@ -78,11 +89,9 @@ jobs:
               \"aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin $REGISTRY\",
               \"mkdir -p /home/ec2-user/athena-app\",
               \"cd /home/ec2-user/athena-app\",
-              \"echo '$COMPOSE_BASE64' | base64 -d > /home/ec2-user/athena-app/docker-compose.yml\",
-              \"echo '$ENV_BASE64' | base64 -d > .env\",
-              \"export FRONTEND_IMAGE=${{ env.REGISTRY }}/${{ env.REPO }}:web-latest\",
-              \"export BACKEND_IMAGE=${{ env.REGISTRY }}/${{ env.REPO }}:api-latest\",
-              \"export RND_IMAGE=${{ env.REGISTRY }}/${{ env.REPO }}:rnd-latest\",
+              \"echo '$COMPOSE_BASE64' | base64 -d > docker-compose.yml\",
+              \"echo '$IMAGES_BASE64' | base64 -d > .env\",
+              \"echo '$SECRETS_BASE64' | base64 -d > .secrets.env\",
               \"docker compose pull athena-frontend\",
               \"docker compose up -d athena-frontend\",
               \"docker image prune -f\",
