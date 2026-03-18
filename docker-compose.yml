@@ -3,6 +3,8 @@ version: '3.8'
 services:
   athena-frontend:
     image: ${FRONTEND_IMAGE}
+    env_file:
+      - .env
     ports:
       - "80:80"
     restart: always
