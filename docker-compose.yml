@@ -5,18 +5,23 @@ services:
     image: ${FRONTEND_IMAGE}
     env_file:
       - .env
+      - .secrets.env
     ports:
       - "80:80"
     restart: always
 
   athena-backend:
     image: ${BACKEND_IMAGE}
+    env_file:
+      - .env
     ports:
       - "8080:80"
     restart: always
 
   athena-rnd:
     image: ${RND_IMAGE}
+    env_file:
+      - .env
     ports:
       - "8081:80"
     restart: always
