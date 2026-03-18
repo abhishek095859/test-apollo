@@ -75,8 +75,8 @@ jobs:
             --parameters "{\"commands\":[
               \"aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin $REGISTRY\",
               \"mkdir -p /home/ec2-user/athena-app\",
-              \"cd /home/ec2-user/athena-app\",
               \"echo '$COMPOSE_BASE64' | base64 -d > /home/ec2-user/athena-app/docker-compose.yml\",
+              \"cd /home/ec2-user/athena-app\",
               \"export FRONTEND_IMAGE=${{ env.REGISTRY }}/${{ env.REPO }}:web-latest\",
               \"export BACKEND_IMAGE=${{ env.REGISTRY }}/${{ env.REPO }}:api-latest\",
               \"export RND_IMAGE=${{ env.REGISTRY }}/${{ env.REPO }}:rnd-latest\",
