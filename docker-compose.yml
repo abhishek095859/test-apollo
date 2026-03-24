@@ -5,7 +5,7 @@ services:
     image: ${FRONTEND_IMAGE}
     env_file:
       - .env
-      - .secrets.env
+      - .frontend-secrets.env
     ports:
       - "80:80"
     restart: always
@@ -14,6 +14,7 @@ services:
     image: ${BACKEND_IMAGE}
     env_file:
       - .env
+      - .backend-secrets.env
     ports:
       - "8080:80"
     restart: always
