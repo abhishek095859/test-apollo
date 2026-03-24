@@ -46,7 +46,7 @@ jobs:
     name: Deploy to EC2 via SSM
     runs-on: ubuntu-latest
     needs: build 
-    environment: athena-api-prod-docker
+    environment: athena-backend
 
     steps:
       - name: Checkout Repository
