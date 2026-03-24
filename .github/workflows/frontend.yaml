@@ -79,7 +79,7 @@ jobs:
               \"mkdir -p /home/ec2-user/athena-app\",
               \"cd /home/ec2-user/athena-app\",
               \"echo '$COMPOSE_BASE64' | base64 -d > /home/ec2-user/athena-app/docker-compose.yml\",
-              \"echo '$ENV_BASE64' | base64 -d > .env\",
+              \"echo '$ENV_BASE64' | base64 -d > .frontend-secrets.env\",
               \"export FRONTEND_IMAGE=${{ env.REGISTRY }}/${{ env.REPO }}:web-latest\",
               \"export BACKEND_IMAGE=${{ env.REGISTRY }}/${{ env.REPO }}:api-latest\",
               \"export RND_IMAGE=${{ env.REGISTRY }}/${{ env.REPO }}:rnd-latest\",
