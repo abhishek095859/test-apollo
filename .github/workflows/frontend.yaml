@@ -75,11 +75,11 @@ jobs:
             "${{ env.REGISTRY }}" "${{ env.REPO }}" > .env.images
           IMAGES_BASE64=$(base64 -w 0 .env.images)
 
-          cat <<EOF > .env.secrets
+          cat <<EOF > .env.frontend-secrets
           DB_PASSWORD=${{ secrets.DB_PASSWORD }}
           API_KEY=${{ secrets.API_KEY }}
           EOF
-          SECRETS_BASE64=$(base64 -w 0 .env.secrets)
+          SECRETS_BASE64=$(base64 -w 0 .env.frontend-secrets)
 
           aws ssm send-command \
             --targets "Key=tag:Name,Values=ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-01,ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-02" \
@@ -91,7 +91,7 @@ jobs:
               \"cd /home/ec2-user/athena-app\",
               \"echo '$COMPOSE_BASE64' | base64 -d > docker-compose.yml\",
               \"echo '$IMAGES_BASE64' | base64 -d > .env\",
-              \"echo '$SECRETS_BASE64' | base64 -d >> .env\",
+              \"echo '$SECRETS_BASE64' | base64 -d > .frontend-secrets.env\",
               \"docker compose pull athena-frontend\",
               \"docker compose up -d athena-frontend\",
               \"docker image prune -f\",
