@@ -39,7 +39,7 @@ jobs:
           REPO: atl_apac_mum_dtlk_prod_athena2.0_ecr_01
         run: |
           docker build -t $REGISTRY/$REPO:web-latest ./backend
-          docker push $REGISTRY/$REPO:web-latest
+          docker push $REGISTRY/$REPO:api-latest
 
 
   deploy:
