@@ -38,7 +38,7 @@ jobs:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPO: atl_apac_mum_dtlk_prod_athena2.0_ecr_01
         run: |
-          docker build -t $REGISTRY/$REPO:web-latest ./backend
+          docker build -t $REGISTRY/$REPO:api-latest ./backend
           docker push $REGISTRY/$REPO:api-latest
 
 
