@@ -32,20 +32,21 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-
+        
       - name: Build and Push Backend Image
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPO: atl_apac_mum_dtlk_prod_athena2.0_ecr_01
         run: |
-          docker build -t $REGISTRY/$REPO:api-latest ./backend
-          docker push $REGISTRY/$REPO:api-latest
+          docker build -t $REGISTRY/$REPO:web-latest ./backend
+          docker push $REGISTRY/$REPO:web-latest
 
 
   deploy:
     name: Deploy to EC2 via SSM
     runs-on: ubuntu-latest
-    needs: build   # deploy runs only after build job succeeds
+    needs: build 
+    environment: athena-api-prod-docker
 
     steps:
       - name: Checkout Repository
@@ -67,6 +68,7 @@ jobs:
           REPO: atl_apac_mum_dtlk_prod_athena2.0_ecr_01
         run: |
           COMPOSE_BASE64=$(base64 -w 0 docker-compose.yml)
+          ENV_BASE64=$(echo -e "DB_PASSWORD=${{ secrets.DB_PASSWORD }}\nAPI_KEY=${{ secrets.API_KEY }}" | base64 -w 0)
 
           aws ssm send-command \
             --targets "Key=tag:Name,Values=ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-01,ATL-APAC-MUM-DTLK-PROD-ATHENA2.0-EC2-02" \
@@ -75,10 +77,12 @@ jobs:
             --parameters "{\"commands\":[
               \"aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin $REGISTRY\",
               \"mkdir -p /home/ec2-user/athena-app\",
-              \"echo '$COMPOSE_BASE64' | base64 -d > /home/ec2-user/athena-app/docker-compose.yml\",
-              \"touch /home/ec2-user/athena-app/.env\",
-              \"sed -i 's|^BACKEND_IMAGE=.*|BACKEND_IMAGE=$REGISTRY/$REPO:api-latest|' /home/ec2-user/athena-app/.env || echo 'BACKEND_IMAGE=$REGISTRY/$REPO:api-latest' >> /home/ec2-user/athena-app/.env\",
               \"cd /home/ec2-user/athena-app\",
+              \"echo '$COMPOSE_BASE64' | base64 -d > /home/ec2-user/athena-app/docker-compose.yml\",
+              \"echo '$ENV_BASE64' | base64 -d > .backend-secrets.env\",
+              \"export FRONTEND_IMAGE=${{ env.REGISTRY }}/${{ env.REPO }}:web-latest\",
+              \"export BACKEND_IMAGE=${{ env.REGISTRY }}/${{ env.REPO }}:api-latest\",
+              \"export RND_IMAGE=${{ env.REGISTRY }}/${{ env.REPO }}:rnd-latest\",
               \"docker compose pull athena-backend\",
               \"docker compose up -d athena-backend\",
               \"docker image prune -f\",
