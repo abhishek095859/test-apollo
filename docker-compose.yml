@@ -23,6 +23,7 @@ services:
     image: ${RND_IMAGE}
     env_file:
       - .env
+      - .rnd-secrets.env
     ports:
       - "8081:80"
     restart: always
