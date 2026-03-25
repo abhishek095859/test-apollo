@@ -74,7 +74,7 @@ jobs:
             "${{ env.REGISTRY }}" "${{ env.REPO }}" > .env.images
           IMAGES_BASE64=$(base64 -w 0 .env.images)
 
-          cat <<EOF > .env.frontend-secrets
+          cat <<EOF > .env.backend-secrets
           DB_PASSWORD=${{ secrets.DB_PASSWORD }}
           API_KEY=${{ secrets.API_KEY }}
           EOF
