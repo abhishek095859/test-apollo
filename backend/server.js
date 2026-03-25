@@ -7,4 +7,4 @@ const server = http.createServer((req, res) => {
         status: "health"
     }));
 });
-server.listen(80); // Docker internal port
+server.listen(80); // Docker internal port 
