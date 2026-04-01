@@ -28,4 +28,4 @@ jobs:
         working-directory: ./prod
         run: |
           terraform init -upgrade
-          terraform plan -auto-approve
+          terraform plan 
