@@ -9,6 +9,12 @@ services:
     ports:
       - "80:80"
     restart: always
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ap-south-1
+        awslogs-group: athena-logs
+        awslogs-stream: frontend-{{.Name}}
 
   athena-backend:
     image: ${BACKEND_IMAGE}
@@ -18,6 +24,12 @@ services:
     ports:
       - "8080:80"
     restart: always
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ap-south-1
+        awslogs-group: athena-logs
+        awslogs-stream: backend-{{.Name}}
 
   athena-rnd:
     image: ${RND_IMAGE}
@@ -27,3 +39,9 @@ services:
     ports:
       - "8081:80"
     restart: always
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ap-south-1
+        awslogs-group: athena-logs
+        awslogs-stream: rnd-{{.Name}}
