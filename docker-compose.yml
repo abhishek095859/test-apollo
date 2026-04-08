@@ -15,6 +15,7 @@ services:
         awslogs-region: ap-south-1
         awslogs-group: athena-logs
         awslogs-stream: frontend-{{.Name}}
+        awslogs-create-group: "true"
 
   athena-backend:
     image: ${BACKEND_IMAGE}
@@ -30,6 +31,7 @@ services:
         awslogs-region: ap-south-1
         awslogs-group: athena-logs
         awslogs-stream: backend-{{.Name}}
+        awslogs-create-group: "true"
 
   athena-rnd:
     image: ${RND_IMAGE}
@@ -45,3 +47,4 @@ services:
         awslogs-region: ap-south-1
         awslogs-group: athena-logs
         awslogs-stream: rnd-{{.Name}}
+        awslogs-create-group: "true"
